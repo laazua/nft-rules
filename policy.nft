@@ -1,0 +1,4 @@
+# 定义三条基础钩子链，并设置默认丢弃（保证白名单逻辑）
+add chain inet filter input  { type filter hook input  priority 0; policy drop; }
+add chain inet filter forward{ type filter hook forward priority 0; policy drop; }
+add chain inet filter output { type filter hook output priority 0; policy accept; }

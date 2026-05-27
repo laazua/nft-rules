@@ -1,0 +1,17 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+# 创建 IPv4/IPv6 双栈过滤表（也可单独使用 ip 或 ip6）
+add table inet filter
+
+# 包含各模块（顺序不可调换：策略→集合→链规则）
+include "policy.nft"
+
+include "sets.nft"
+
+## 以下两个文件规则可以单独分开引入
+## 根据实际情况进行调整（如仅做服务器防护，forward 链规则可不引入）
+include "chain-input.nft"
+
+include "chain-forward.nft"

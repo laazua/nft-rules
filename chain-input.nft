@@ -1,0 +1,17 @@
+# 处理发往本机（input 链）的流量，用于服务器提供请求处理
+
+# 1. 允许已建立连接及相关连接的回包
+add rule inet filter input ct state established,related accept
+
+# 2. 允许环回接口所有流量
+add rule inet filter input iif lo accept
+
+# 3. 根据集合放行合法源 IP 对合法端口的访问
+add rule inet filter input ip saddr @local_allow_sources tcp dport @local_tcp_services accept
+add rule inet filter input ip saddr @local_allow_sources udp dport @local_udp_services accept
+
+# 4. 可选：ICMP 回应（ping）放行，便于维护
+add rule inet filter input ip protocol icmp icmp type { echo-request } accept
+
+# 5. 记录并丢弃其余所有未匹配的入站流量（便于排错）
+add rule inet filter input log prefix "INPUT_DROP: " drop
