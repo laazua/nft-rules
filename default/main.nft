@@ -1,0 +1,42 @@
+table inet firewall {
+	set trusted_ips {
+		type ipv4_addr
+		flags interval
+		elements = { 127.0.0.1, 192.168.165.0/24 }
+	}
+
+	set ssh_blacklist {
+		type ipv4_addr
+		size 65535
+		flags dynamic,timeout
+		timeout 1h
+	}
+
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		ip saddr @ssh_blacklist drop
+		ip protocol icmp accept
+		ip6 nexthdr ipv6-icmp accept
+		tcp flags syn limit rate 30/second burst 100 packets accept
+		ip saddr @trusted_ips tcp dport 22 accept
+		tcp dport 22 ct state new limit rate over 10/minute burst 5 packets add @ssh_blacklist { ip saddr timeout 1h } drop
+		udp dport 1194 ip saddr @trusted_ips accept
+		udp dport 51820 ip saddr @trusted_ips accept
+		tcp dport { 80, 443 } accept
+		limit rate 5/second burst 5 packets log prefix "NFT-DROP: " flags all counter packets 0 bytes 0
+		reject with icmpx admin-prohibited
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+		ct state established,related accept
+		ip saddr 10.8.0.0/24 accept
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}

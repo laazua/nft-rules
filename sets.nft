@@ -23,19 +23,22 @@ add map inet filter port_redir_map { type inet_service : inet_service; }
 # ------------------- 填充数据（示例，可按需修改）-------------------
 # 本地服务允许的源 IP（管理网段或特定主机）
 # add element inet filter local_allow_sources { 10.0.0.0/8, 192.168.1.0/24, 172.16.0.5 }
-add element inet filter local_allow_sources { 192.168.154.149 }
+add element inet filter local_allow_sources { 192.168.154.149, 192.168.165.87 }
 # 本机开放的服务端口（HTTP、HTTPS、SSH）
-add element inet filter local_tcp_services { 22, 80, 443, 8076 }
-add element inet filter local_udp_services { 53, 123 }
+add element inet filter local_tcp_services { 22, 8076 }
+# add element inet filter local_udp_services { 53, 123 }
 
 # 转发允许的源（内部客户端子网）
-add element inet filter forward_sources { 192.168.10.0/24, 10.10.10.0/24 }
+# add element inet filter forward_sources { 192.168.10.0/24, 10.10.10.0/24 }
+add element inet filter forward_sources { 192.168.154.149 }
 # 转发允许的目标（后端服务器子网）
-add element inet filter forward_destinations { 172.20.0.0/16 }
+# add element inet filter forward_destinations { 172.20.0.0/16 }
+add element inet filter forward_destinations { 192.168.165.89 }
 # 允许转发的端口（例如 80,443 以及自定义代理端口）
-add element inet filter forward_ports { 80, 443, 3128, 8080 }
+# add element inet filter forward_ports { 80, 443, 3128, 8080 }
+add element inet filter forward_ports { 8076 }
 
 # DNAT 映射示例：公网 IP  -> 内网真实服务器
-add element inet filter dnat_map { 203.0.113.5 : 192.168.100.10, 203.0.113.6 : 192.168.100.20 }
+# add element inet filter dnat_map { 203.0.113.5 : 192.168.100.10, 203.0.113.6 : 192.168.100.20 }
 # 端口重定向示例：访问主机 8080 映射到内网 80 端口（需结合 nat 表使用）
-add element inet filter port_redir_map { 8080 : 80, 8443 : 443 }
+# add element inet filter port_redir_map { 8080 : 80, 8443 : 443 }

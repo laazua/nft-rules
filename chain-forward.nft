@@ -16,7 +16,7 @@ add rule inet filter forward ip saddr @forward_sources \
 # 4. 若需要结合 DNAT 映射（请确保已在 nat 表配置相应的 PREROUTING 规则），
 #    此处只需允许转发到映射后的内网地址。
 #    例如：在 nat 表已做 `dnat to ip daddr map @dnat_map`，filter 表允许发往实际内网地址即可。
-add rule inet filter forward ip daddr { 192.168.100.10, 192.168.100.20 } tcp dport { 80, 443 } accept
+add rule inet filter forward ip daddr @dnat_map tcp dport @forward_ports accept
 
 # 5. 记录并丢弃其余所有未匹配的转发流量
 add rule inet filter forward log prefix "FORWARD_DROP: " drop

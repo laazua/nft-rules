@@ -1,0 +1,109 @@
+#!/usr/sbin/nft -f
+
+# ============================================
+# nftables 白名单防火墙规则集
+# 兼容 nftables 所有版本（不使用 define）
+# 默认策略: 全部丢弃，仅白名单放行
+# ============================================
+
+# 1. 创建表（使用 inet 家族同时支持 IPv4 和 IPv6）
+table inet whitelist_firewall
+
+# 2. 创建白名单 IP 集合
+set inet whitelist_firewall trusted_ips {
+    type ipv4_addr
+    flags interval
+    elements = {
+        192.168.1.0/24,     # 内网段1
+        10.0.0.0/8,         # 内网段2
+        172.16.0.0/12,      # 内网段3
+        192.168.165.0/24,   # 内网段4
+        # 添加你的可信公网IP
+        # 1.2.3.4,
+        # 5.6.7.8/29,
+        192.168.165.0/24,   # 内网段4
+    }
+}
+
+# 3. 创建白名单端口集合
+set inet whitelist_firewall whitelist_ports {
+    type inet_service
+    elements = {
+        22,     # SSH
+        # 80,     # HTTP
+        # 443,    # HTTPS
+        # 53,     # DNS
+        # 123,    # NTP
+        # 3306,   # MySQL
+        # 5432,   # PostgreSQL
+        # 6379,   # Redis
+        # 27017   # MongoDB
+    }
+}
+
+# 4. 创建黑名单集合（动态超时）
+set inet whitelist_firewall blacklist {
+    type ipv4_addr
+    flags timeout
+    timeout 1h
+}
+
+# ============================================
+# 5. INPUT 链（进入本机的流量）
+# ============================================
+chain inet whitelist_firewall input {
+    type filter hook input priority 0; policy drop;
+    
+    # 5.1 允许回环接口（本地通信）
+    iif "lo" accept
+    
+    # 5.2 允许已建立的连接和相关连接（关键！避免阻断返回流量）
+    ct state { established, related } accept
+    
+    # 5.3 允许 ICMP（ping，可选）
+    ip protocol icmp accept
+    ip6 nexthdr icmpv6 accept
+    
+    # 5.4 黑名单 IP 直接丢弃
+    ip saddr @blacklist drop
+    
+    # 5.5 白名单 IP 全部放行
+    ip saddr @trusted_ips accept
+    
+    # 5.6 白名单端口放行
+    tcp dport @whitelist_ports accept
+    udp dport @whitelist_ports accept
+    
+    # 5.7 SSH 单独限速（防暴力破解）
+    tcp dport 22 ct state new limit rate 5/minute accept
+    
+    # 5.8 通用新连接限速
+    ct state new limit rate 100/minute accept
+    
+    # 5.9 日志记录被拒绝的流量（可选，注意日志量）
+    # log prefix "[nftables-DROP] " counter drop
+}
+
+# ============================================
+# 6. FORWARD 链（转发的流量，如果本机作为路由器）
+# ============================================
+chain inet whitelist_firewall forward {
+    type filter hook forward priority 0; policy drop;
+    
+    # 允许已建立的连接和相关连接
+    ct state { established, related } accept
+    
+    # 仅允许白名单源 IP 转发
+    ip saddr @trusted_ips accept
+    
+    # 记录被拒绝的转发
+    # log prefix "[nftables-FWD-DROP] " counter drop
+}
+
+# ============================================
+# 7. OUTPUT 链（本机发出的流量）
+# ============================================
+chain inet whitelist_firewall output {
+    type filter hook output priority 0; policy accept;
+    # 通常服务器输出流量可以全放行，除非有特殊安全要求
+}
