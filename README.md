@@ -34,8 +34,9 @@ sudo nft list ruleset
 
 ---
 ## 模块实践
-::: code-group
-```text [项目结构]
+
+### 项目结构
+```text
 /etc/nftables/
 ├── defines.nft            # 全局变量
 ├── main.nft               # 主入口
@@ -61,7 +62,8 @@ sudo nft list ruleset
     ├── vlan-map.nft           # VLAN映射
     └── traffic-class.nft      # 流量分类
 ```
-```bash [main.nft]
+### main.nft
+```bash
 #!/usr/sbin/nft -f
 
 # 清空规则
@@ -85,4 +87,3 @@ include "./sets/*.nft"
 # 包含字典定义: maps/*.nft
 include "./maps/*.nft"
 ```
-:::
